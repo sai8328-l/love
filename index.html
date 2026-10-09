@@ -57,34 +57,61 @@
       );
     }
 
-    /* 3D Perspective Container */
+    /* 3D Perspective Container
+       --grow: how much taller the letter becomes when opened (fraction of envelope height) */
+    .envelope-stage {
+      --grow: 0.6;
+    }
+    @media (min-width: 640px) {
+      .envelope-stage { --grow: 0.4; }
+    }
+
     .envelope-wrapper {
       perspective: 1200px;
     }
 
-    /* Top Flap Animation */
+    /* Reserves room below the envelope for the dropped pocket (envelope is 4:3) */
+    .envelope-spacer {
+      padding-top: 0;
+      transition: padding-top 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+    }
+    .envelope-stage.open .envelope-spacer {
+      padding-top: calc(75% * var(--grow) + 1rem);
+    }
+
+    /* Top Flap Animation (closing: flap folds back after pocket returns) */
     .flap {
       transform-origin: top center;
-      transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s 0.35s;
+      transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.9s, translate 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s, z-index 0s 1.25s;
       z-index: 25;
     }
 
     .envelope-wrapper.open .flap {
       transform: rotateX(180deg);
+      translate: 0 calc(200% * (1 + var(--grow)));
       z-index: 5;
+      transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1), translate 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s, z-index 0s 0.35s;
     }
 
-    /* Letter Up and Out physics transition */
+    /* Envelope body (back + pocket) slides down below the letter when opened */
+    .envelope-part {
+      transition: translate 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+    }
+    .envelope-wrapper.open .envelope-part {
+      translate: 0 calc(100% * (1 + var(--grow)));
+      transition-delay: 0.3s;
+    }
+
+    /* Letter grows taller as the pocket drops away, revealing the full message */
     .letter {
-      transition: transform 0.85s cubic-bezier(0.34, 1.4, 0.64, 1) 0.4s, opacity 0.5s ease 0.4s, z-index 0.1s 0.5s;
-      transform: translateY(0%);
+      transition: bottom 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+      bottom: 0.75rem;
       z-index: 10;
     }
 
-    /* When envelope opens, letter moves up out of pocket and glides forward/down */
     .envelope-wrapper.open .letter {
-      transform: translateY(-50%) scale(1.02);
-      z-index: 10;
+      bottom: calc(1rem - 100% * var(--grow));
+      transition-delay: 0.3s;
     }
 
     /* Smooth transition for theme switching */
@@ -135,31 +162,33 @@
 
   <main class="flex-1 flex flex-col items-center justify-center my-auto w-full max-w-lg relative py-8 md:py-16">
     
+    <div id="envelopeStage" class="envelope-stage w-full max-w-[420px]">
     <!-- ENVELOPE WRAPPER -->
-    <div id="envelopeContainer" class="envelope-wrapper envelope-floating w-full max-w-[420px] aspect-[4/3] relative cursor-pointer group" onclick="toggleEnvelope()">
+    <div id="envelopeContainer" class="envelope-wrapper envelope-floating w-full aspect-[4/3] relative cursor-pointer group" onclick="toggleEnvelope()">
       
       <!-- BACK OF ENVELOPE BASE -->
-      <div class="absolute inset-0 bg-rose-100/90 rounded-2xl shadow-2xl border border-rose-200 overflow-hidden"></div>
+      <div class="envelope-part absolute inset-0 bg-rose-100/90 rounded-2xl shadow-2xl border border-rose-200 overflow-hidden"></div>
 
       <!-- INSIDE LOVE LETTER CARD -->
       <div 
         id="letterCard" 
-        class="letter absolute inset-x-3 top-3 bottom-3 rounded-xl p-5 md:p-6 shadow-xl flex flex-col justify-between border transition-all duration-300 bg-amber-50/95 border-amber-200/90"
+        onclick="if (isOpen) event.stopPropagation()"
+        class="letter absolute inset-x-3 top-3 rounded-xl p-4 sm:p-5 md:p-6 shadow-xl flex flex-col justify-between border transition-all duration-300 bg-amber-50/95 border-amber-200/90"
       >
         <!-- Letter Inner Dynamic Content -->
         <div class="custom-scrollbar overflow-y-auto pr-1 flex-1 flex flex-col justify-start">
           
-          <div class="flex justify-between items-center border-b border-rose-200/60 pb-2 mb-3">
+          <div class="flex justify-between items-center gap-2 border-b border-rose-200/60 pb-2 mb-3">
             <h2 id="letterHeading" class="font-dancing text-2xl md:text-3xl font-bold text-rose-800 tracking-wide">
               Dearest Surekha,
             </h2>
-            <span id="themeBadge" class="text-[10px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
+            <span id="themeBadge" class="shrink-0 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
               Poetic Style
             </span>
           </div>
 
           <!-- DYNAMIC LETTER BODY -->
-          <div id="letterBodyContainer" class="letter-text-container text-xs md:text-sm text-slate-700 leading-relaxed font-serif space-y-2.5">
+          <div id="letterBodyContainer" class="letter-text-container text-sm md:text-[15px] text-slate-700 leading-relaxed font-serif space-y-2.5">
             <!-- JavaScript dynamically injects content based on selected style -->
           </div>
 
@@ -186,7 +215,7 @@
       </div>
 
       <!-- FRONT ENVELOPE POCKET COVER -->
-      <div class="absolute inset-0 z-20 pointer-events-none rounded-2xl overflow-hidden shadow-md">
+      <div class="envelope-part absolute inset-0 z-20 pointer-events-none rounded-2xl overflow-hidden shadow-md">
         
         <!-- Air-Mail Striped Borders -->
         <div class="airmail-border-left absolute left-0 top-0 bottom-0 w-5 md:w-6 opacity-90"></div>
@@ -225,6 +254,8 @@
       </div>
 
     </div>
+    <div class="envelope-spacer" aria-hidden="true"></div>
+    </div>
 
     <div class="mt-10 flex flex-col items-center gap-2 z-30">
       <button 
@@ -236,7 +267,7 @@
         <span id="btnIcon" class="transition-transform group-hover:scale-125">💌</span>
       </button>
 
-      <p class="text-xs text-rose-900/60 font-medium">Click the envelope or button to open</p>
+      <p class="text-xs text-rose-900/60 font-medium text-center">Tap the envelope or button to open</p>
     </div>
 
   </main>
@@ -288,26 +319,26 @@
       </div>
     </div>
   </div>
-  <section class="my-4 z-40 w-full max-w-md">
+  <section class="my-4 z-40 w-full max-w-md px-1">
     <div class="bg-white/80 backdrop-blur-md p-1.5 rounded-2xl shadow-md border border-rose-100 flex items-center justify-between gap-1 text-xs font-medium">
       <button 
         id="tab-sweet"
         onclick="switchManner('sweet')"
-        class="flex-1 py-2 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 bg-rose-500 text-white shadow-sm font-semibold"
+        class="flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs leading-tight bg-rose-500 text-white shadow-sm font-semibold"
       >
         <span>🌸</span> Sweet & Poetic
       </button>
       <button 
         id="tab-modern"
         onclick="switchManner('modern')"
-        class="flex-1 py-2 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50"
+        class="flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs leading-tight text-slate-600 hover:text-rose-600 hover:bg-rose-50"
       >
         <span>💖</span> Modern & Deep
       </button>
       <button 
         id="tab-playful"
         onclick="switchManner('playful')"
-        class="flex-1 py-2 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50"
+        class="flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs leading-tight text-slate-600 hover:text-rose-600 hover:bg-rose-50"
       >
         <span>✨</span> Playful & Cute
       </button>
@@ -361,6 +392,7 @@
     // Toggle Envelope Open / Close Physics
     function toggleEnvelope() {
       const envelope = document.getElementById('envelopeContainer');
+      const stage = document.getElementById('envelopeStage');
       const btnText = document.getElementById('btnText');
       const btnIcon = document.getElementById('btnIcon');
       
@@ -370,6 +402,7 @@
         // Pause float motion so letter is stable to read
         envelope.classList.remove('envelope-floating');
         envelope.classList.add('open');
+        stage.classList.add('open');
         btnText.innerText = 'Close the envelope';
         btnIcon.innerText = '✨';
 
@@ -384,11 +417,12 @@
 
       } else {
         envelope.classList.remove('open');
+        stage.classList.remove('open');
         setTimeout(() => {
           if (!isOpen) {
             envelope.classList.add('envelope-floating');
           }
-        }, 850);
+        }, 1600);
         btnText.innerText = 'Open the envelope';
         btnIcon.innerText = '💌';
       }
@@ -403,9 +437,9 @@
       ['sweet', 'modern', 'playful'].forEach(key => {
         const btn = document.getElementById(`tab-${key}`);
         if (key === styleKey) {
-          btn.className = "flex-1 py-2 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 bg-rose-500 text-white shadow-sm font-semibold";
+          btn.className = "flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs leading-tight bg-rose-500 text-white shadow-sm font-semibold";
         } else {
-          btn.className = "flex-1 py-2 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50";
+          btn.className = "flex-1 py-2 px-1.5 sm:px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs leading-tight text-slate-600 hover:text-rose-600 hover:bg-rose-50";
         }
       });
 
