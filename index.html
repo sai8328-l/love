@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Love Letter for You</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Canvas Confetti for romantic celebrate button -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts: Inter, Playfair Display, Caveat, Dancing Script, and Pacifico -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Dancing+Script:wght@600;700&family=Inter:wght@400;500;600;700&family=Pacifico&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 50%, #fce7f3 100%);
+    }
+
+    /* Font helper utility classes */
+    .font-caveat { font-family: 'Caveat', cursive; }
+    .font-dancing { font-family: 'Dancing Script', cursive; }
+    .font-pacifico { font-family: 'Pacifico', cursive; }
+    .font-playfair { font-family: 'Playfair Display', serif; }
+
+    /* Gentle floating animation for closed envelope */
+    @keyframes floatEnvelope {
+      0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-12px) rotate(0.8deg);
+      }
+    }
+
+    .envelope-floating {
+      animation: floatEnvelope 4.2s ease-in-out infinite;
+    }
+
+    /* Air-mail border strip styling */
+    .airmail-border-left, .airmail-border-right {
+      background: repeating-linear-gradient(
+        -45deg,
+        #f43f5e,
+        #f43f5e 12px,
+        #ffffff 12px,
+        #ffffff 18px,
+        #3b82f6 18px,
+        #3b82f6 30px,
+        #ffffff 30px,
+        #ffffff 36px
+      );
+    }
+
+    /* 3D Perspective Container */
+    .envelope-wrapper {
+      perspective: 1200px;
+    }
+
+    /* Top Flap Animation */
+    .flap {
+      transform-origin: top center;
+      transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s 0.35s;
+      z-index: 25;
+    }
+
+    .envelope-wrapper.open .flap {
+      transform: rotateX(180deg);
+      z-index: 5;
+    }
+
+    /* Letter Up and Out physics transition */
+    .letter {
+      transition: transform 0.85s cubic-bezier(0.34, 1.4, 0.64, 1) 0.4s, opacity 0.5s ease 0.4s, z-index 0.1s 0.5s;
+      transform: translateY(0%);
+      z-index: 10;
+    }
+
+    /* When envelope opens, letter moves up out of pocket and glides forward/down */
+    .envelope-wrapper.open .letter {
+      transform: translateY(-50%) scale(1.02);
+      z-index: 10;
+    }
+
+    /* Smooth transition for theme switching */
+    .letter-text-container {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .letter-text-container.changing {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    /* Custom Scrollbar for Letter Content */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.03);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(225, 29, 72, 0.2);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(225, 29, 72, 0.4);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-4 md:p-8 select-none text-slate-800">
+
+  <header class="w-full max-w-4xl flex flex-col sm:flex-row justify-between items-center gap-4 py-2 px-2 z-50">
+    <div class="flex items-center gap-2">
+      <div class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></div>
+      <!--<span class="text-xs md:text-sm font-semibold tracking-wider text-rose-900/70 uppercase">Special Delivery For Someone Special</span>
+    </div>
+
+    <!-- Personalization Modal Trigger / Controls -->
+    <div class="flex items-center gap-2 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-rose-100">
+      <button onclick="toggleCustomizeModal()" class="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+        Edit Names
+      </button>
+    </div>
+  </header>
+
+  
+
+  <main class="flex-1 flex flex-col items-center justify-center my-auto w-full max-w-lg relative py-8 md:py-16">
+    
+    <!-- ENVELOPE WRAPPER -->
+    <div id="envelopeContainer" class="envelope-wrapper envelope-floating w-full max-w-[420px] aspect-[4/3] relative cursor-pointer group" onclick="toggleEnvelope()">
+      
+      <!-- BACK OF ENVELOPE BASE -->
+      <div class="absolute inset-0 bg-rose-100/90 rounded-2xl shadow-2xl border border-rose-200 overflow-hidden"></div>
+
+      <!-- INSIDE LOVE LETTER CARD -->
+      <div 
+        id="letterCard" 
+        class="letter absolute inset-x-3 top-3 bottom-3 rounded-xl p-5 md:p-6 shadow-xl flex flex-col justify-between border transition-all duration-300 bg-amber-50/95 border-amber-200/90"
+      >
+        <!-- Letter Inner Dynamic Content -->
+        <div class="custom-scrollbar overflow-y-auto pr-1 flex-1 flex flex-col justify-start">
+          
+          <div class="flex justify-between items-center border-b border-rose-200/60 pb-2 mb-3">
+            <h2 id="letterHeading" class="font-dancing text-2xl md:text-3xl font-bold text-rose-800 tracking-wide">
+              Dearest Surekha,
+            </h2>
+            <span id="themeBadge" class="text-[10px] uppercase tracking-wider font-semibold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
+              Poetic Style
+            </span>
+          </div>
+
+          <!-- DYNAMIC LETTER BODY -->
+          <div id="letterBodyContainer" class="letter-text-container text-xs md:text-sm text-slate-700 leading-relaxed font-serif space-y-2.5">
+            <!-- JavaScript dynamically injects content based on selected style -->
+          </div>
+
+        </div>
+
+        <!-- LETTER FOOTER -->
+        <div class="pt-3 mt-2 border-t border-rose-200/60 flex items-center justify-between gap-2">
+          <div>
+            <span class="text-[10px] text-slate-400 block uppercase tracking-wider font-sans">Forever Yours</span>
+            <span id="senderNameDisplay" class="font-caveat text-xl text-rose-700 font-bold block leading-none">
+              — Sai Mohan
+            </span>
+          </div>
+
+          <!-- Celebrate Heart Shower Button -->
+          <button 
+            onclick="triggerLoveConfetti(event)" 
+            class="px-3.5 py-1.5 bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-semibold rounded-full shadow transition-all duration-300 flex items-center gap-1"
+            title="Send Hearts!"
+          >
+            <span>❤️</span> Send Love
+          </button>
+        </div>
+      </div>
+
+      <!-- FRONT ENVELOPE POCKET COVER -->
+      <div class="absolute inset-0 z-20 pointer-events-none rounded-2xl overflow-hidden shadow-md">
+        
+        <!-- Air-Mail Striped Borders -->
+        <div class="airmail-border-left absolute left-0 top-0 bottom-0 w-5 md:w-6 opacity-90"></div>
+        <div class="airmail-border-right absolute right-0 top-0 bottom-0 w-5 md:w-6 opacity-90"></div>
+
+        <!-- Main White/Cream Envelope Face -->
+        <div class="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-rose-50 mx-5 md:mx-6 border-x border-slate-200/70 shadow-inner">
+          
+          <!-- Subtle Center Stamp Seal Graphic -->
+          <div class="absolute top-4 right-6 opacity-80 pointer-events-none">
+            <div class="w-12 h-12 border-2 border-dashed border-rose-400/80 rounded-full flex flex-col items-center justify-center text-[8px] font-mono font-bold uppercase text-rose-600 text-center leading-tight rotate-12 bg-white/50">
+              <span>AIR MAIL</span>
+              <span class="text-[12px] leading-none">💌</span>
+            </div>
+          </div>
+
+          <!-- Hand-written Recipient Label -->
+          <div class="absolute bottom-6 left-6 md:left-8 font-caveat text-3xl md:text-4xl text-rose-900 tracking-wide select-none drop-shadow-sm">
+            For: <span id="envelopeRecipientDisplay" class="font-bold underline decoration-rose-300 decoration-wavy">Surekha</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TOP FLAP WITH RED HEART SEAL -->
+      <div class="flap absolute inset-x-0 top-0 h-1/2 pointer-events-none">
+        <svg class="w-full h-full drop-shadow-md" viewBox="0 0 420 160" preserveAspectRatio="none">
+          <polygon points="0,0 420,0 210,150" fill="#f8fafc" stroke="#f1f5f9" stroke-width="2" />
+          <polygon points="0,0 420,0 210,146" fill="#ffffff" />
+        </svg>
+
+        <!-- Wax Seal Emoji -->
+        <div class="absolute bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 w-9 h-9 rounded-full bg-rose-600 shadow-md flex items-center justify-center text-white text-base border-2 border-rose-300">
+          ❤️
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-10 flex flex-col items-center gap-2 z-30">
+      <button 
+        id="toggleBtn"
+        onclick="toggleEnvelope()"
+        class="px-8 py-3.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-semibold text-sm md:text-base rounded-full shadow-lg hover:shadow-rose-300/50 hover:shadow-xl transition-all duration-300 flex items-center gap-2 group cursor-pointer"
+      >
+        <span id="btnText">Open the envelope</span>
+        <span id="btnIcon" class="transition-transform group-hover:scale-125">💌</span>
+      </button>
+
+      <p class="text-xs text-rose-900/60 font-medium">Click the envelope or button to open</p>
+    </div>
+
+  </main>
+
+  <div id="customizeModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-rose-100">
+      <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+        <span>✏️</span> Personalize Names
+      </h3>
+      <p class="text-xs text-slate-500 mb-4">Customize recipient and sender names instantly.</p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-600 block mb-1">Recipient Name (For:)</label>
+          <input 
+            type="text" 
+            id="recipientInput" 
+            value="Surekha" 
+            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+            placeholder="e.g. Surekha / My Love"
+          />
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-slate-600 block mb-1">Your Name (Sender)</label>
+          <input 
+            type="text" 
+            id="senderInput" 
+            value="Sai Mohan" 
+            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+            placeholder="e.g. Sai Mohan"
+          />
+        </div>
+      </div>
+
+      <div class="mt-6 flex gap-2">
+        <button 
+          onclick="toggleCustomizeModal()" 
+          class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors"
+        >
+          Cancel
+        </button>
+        <button 
+          onclick="saveNames()" 
+          class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg transition-colors shadow"
+        >
+          Save & Apply
+        </button>
+      </div>
+    </div>
+  </div>
+  <section class="my-4 z-40 w-full max-w-md">
+    <div class="bg-white/80 backdrop-blur-md p-1.5 rounded-2xl shadow-md border border-rose-100 flex items-center justify-between gap-1 text-xs font-medium">
+      <button 
+        id="tab-sweet"
+        onclick="switchManner('sweet')"
+        class="flex-1 py-2 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 bg-rose-500 text-white shadow-sm font-semibold"
+      >
+        <span>🌸</span> Sweet & Poetic
+      </button>
+      <button 
+        id="tab-modern"
+        onclick="switchManner('modern')"
+        class="flex-1 py-2 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50"
+      >
+        <span>💖</span> Modern & Deep
+      </button>
+      <button 
+        id="tab-playful"
+        onclick="switchManner('playful')"
+        class="flex-1 py-2 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50"
+      >
+        <span>✨</span> Playful & Cute
+      </button>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-4xl text-center py-3 text-xs text-rose-900/50">
+    Crafted with ❤️ for special moments.
+  </footer>
+
+  <script>
+    let isOpen = false;
+    let currentManner = 'sweet';
+
+    // Personalization default data
+    let recipientName = "Surekha";
+    let senderName = "Sai Mohan";
+
+    // 3 Distinct Letter Manners/Styles
+    const loveLetterStyles = {
+      sweet: {
+        badge: "Sweet & Poetic",
+        fontClass: "font-dancing",
+        getHtml: (rec, send) => `
+          <p class="italic text-rose-900/90 font-medium">"Suri I really loves u so much not because ur beautiful because ur gorgeous than beautiful word"</p>
+          <p>Nenu neku rasedhi not a simple letter see my efforts because wrting and expressing with tech is not easy but i kept efforts because ur my sweet heart and more imp for me in my life ra.</p>
+          <p>nuvu navithaii challa happy ga vunta if u cry means naku badha aithadhi. always stay happy and make me happy in my life ra thats my only wish ra </p>
+        `
+      },
+      modern: {
+        badge: "Modern & Heartfelt",
+        fontClass: "font-playfair",
+        getHtml: (rec, send) => `
+          <p>I wanted to take a moment to put my feelings into words — real, honest, and straight from the heart.</p>
+          <p>Life gets busy and fast-paced, but whenever I look at you or hear your voice, everything calms down. You are my safe space and my favorite part of every day.</p>
+          <p>I appreciate every quiet laugh we share, every understanding look, and every little thing you do. I'm so grateful to have you by my side.</p>
+        `
+      },
+      playful: {
+        badge: "Playful & Cute",
+        fontClass: "font-pacifico",
+        getHtml: (rec, send) => `
+          <p class="text-rose-600 font-semibold">Warning: Excessive cuteness ahead! 🧸✨</p>
+          <p>If you were a coffee, you'd be an extra-sweet mocha with extra whipped cream. If you were a song, you'd be the one I put on repeat all day long!</p>
+          <p>Thanks for tolerating my silliness, stealing my heart, and being the cutest human on this planet. You're my favorite notification!</p>
+        `
+      }
+    };
+
+    // Toggle Envelope Open / Close Physics
+    function toggleEnvelope() {
+      const envelope = document.getElementById('envelopeContainer');
+      const btnText = document.getElementById('btnText');
+      const btnIcon = document.getElementById('btnIcon');
+      
+      isOpen = !isOpen;
+
+      if (isOpen) {
+        // Pause float motion so letter is stable to read
+        envelope.classList.remove('envelope-floating');
+        envelope.classList.add('open');
+        btnText.innerText = 'Close the envelope';
+        btnIcon.innerText = '✨';
+
+        // Trigger light confetti burst on first open
+        setTimeout(() => {
+          confetti({
+            particleCount: 25,
+            spread: 50,
+            origin: { y: 0.6 }
+          });
+        }, 600);
+
+      } else {
+        envelope.classList.remove('open');
+        setTimeout(() => {
+          if (!isOpen) {
+            envelope.classList.add('envelope-floating');
+          }
+        }, 850);
+        btnText.innerText = 'Open the envelope';
+        btnIcon.innerText = '💌';
+      }
+    }
+
+    // Switch between the 3 Manner Themes
+    function switchManner(styleKey) {
+      if (!loveLetterStyles[styleKey]) return;
+      currentManner = styleKey;
+
+      // Update Tab Navigation Active States
+      ['sweet', 'modern', 'playful'].forEach(key => {
+        const btn = document.getElementById(`tab-${key}`);
+        if (key === styleKey) {
+          btn.className = "flex-1 py-2 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 bg-rose-500 text-white shadow-sm font-semibold";
+        } else {
+          btn.className = "flex-1 py-2 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50";
+        }
+      });
+
+      // Animate text transition
+      const bodyContainer = document.getElementById('letterBodyContainer');
+      const heading = document.getElementById('letterHeading');
+      const badge = document.getElementById('themeBadge');
+
+      bodyContainer.classList.add('changing');
+
+      setTimeout(() => {
+        const style = loveLetterStyles[styleKey];
+        badge.innerText = style.badge;
+        heading.className = `${style.fontClass} text-2xl md:text-3xl font-bold text-rose-800 tracking-wide`;
+        bodyContainer.innerHTML = style.getHtml(recipientName, senderName);
+        bodyContainer.classList.remove('changing');
+      }, 250);
+    }
+
+    // Personalization modal controls
+    function toggleCustomizeModal() {
+      const modal = document.getElementById('customizeModal');
+      modal.classList.toggle('hidden');
+    }
+
+    function saveNames() {
+      const rInput = document.getElementById('recipientInput').value.trim();
+      const sInput = document.getElementById('senderInput').value.trim();
+
+      if (rInput) recipientName = rInput;
+      if (sInput) senderName = sInput;
+
+      // Update UI elements
+      document.getElementById('letterHeading').innerText = `Dearest ${recipientName},`;
+      document.getElementById('envelopeRecipientDisplay').innerText = recipientName;
+      document.getElementById('senderNameDisplay').innerText = `— ${senderName}`;
+
+      // Refresh body content with new names
+      const bodyContainer = document.getElementById('letterBodyContainer');
+      bodyContainer.innerHTML = loveLetterStyles[currentManner].getHtml(recipientName, senderName);
+
+      toggleCustomizeModal();
+    }
+
+    // Interactive Heart Confetti Burst
+    function triggerLoveConfetti(e) {
+      if (e) e.stopPropagation(); // prevent closing envelope on button click
+      
+      confetti({
+        particleCount: 50,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#f43f5e', '#ec4899', '#fb7185', '#e11d48']
+      });
+    }
+
+    // Initial load setup
+    window.onload = function() {
+      switchManner('sweet');
+    };
+  </script>
+</body>
+</html>
